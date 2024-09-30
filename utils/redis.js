@@ -10,14 +10,13 @@ class RedisClient {
    */
   constructor() {
     this.client = redis.createClient();
-
-    this.client.on("error", (error) => {
-      console.error(`Redis client error: ${error}`);
-    });
-
     this.getAsync = promisify(this.client.get).bind(this.client);
     this.setAsync = promisify(this.client.set).bind(this.client);
     this.delAsync = promisify(this.client.del).bind(this.client);
+
+    this.client.on("error", (error) => {
+      console.log(`Redis client not connected to the server: ${error.message}`);
+    });
   }
 
   /**
