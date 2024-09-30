@@ -2,12 +2,19 @@ import redis from "redis";
 import { promisify } from "util";
 
 class RedisClient {
+  /**
+   * Creates a new RedisClient instance.
+   */
   constructor() {
     this.client = redis.createClient();
 
     this.client.on("error", (error) => {
       console.error(`Redis client error: ${error}`);
     });
+
+    this.getAsync = promisify(this.client.get).bind(this.client);
+    this.setAsync = promisify(this.client.set).bind(this.client);
+    this.delAsync = promisify(this.client.del).bind(this.client);
   }
 
   isAlive() {
