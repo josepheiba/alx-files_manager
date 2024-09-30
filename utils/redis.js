@@ -1,6 +1,9 @@
 import redis from "redis";
 import { promisify } from "util";
 
+/**
+ * Represents a Redis client.
+ */
 class RedisClient {
   /**
    * Creates a new RedisClient instance.
