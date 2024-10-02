@@ -1,3 +1,5 @@
+/* eslint-disable import/no-named-as-default */
+/* eslint-disable no-unused-vars */
 import { ObjectId } from 'mongodb';
 import fs from 'fs';
 import mime from 'mime-types';
