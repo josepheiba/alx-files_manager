@@ -1,5 +1,5 @@
-import redis from "redis";
-import { promisify } from "util";
+import redis from 'redis';
+import { promisify } from 'util';
 
 /**
  * Redis client.
@@ -14,7 +14,7 @@ class RedisClient {
     this.setAsync = promisify(this.client.set).bind(this.client);
     this.delAsync = promisify(this.client.del).bind(this.client);
 
-    this.client.on("error", (error) => {
+    this.client.on('error', (error) => {
       console.error(`Redis client error: ${error}`);
     });
   }
@@ -50,7 +50,7 @@ class RedisClient {
    */
   async set(key, value, duration) {
     try {
-      await this.setAsync(key, value, "EX", duration);
+      await this.setAsync(key, value, 'EX', duration);
     } catch (error) {
       console.error(`Error setting key ${key}: ${error}`);
     }
