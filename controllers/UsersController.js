@@ -1,4 +1,3 @@
-/* eslint-disable import/no-named-as-default */
 import sha1 from 'sha1';
 import dbClient from '../utils/db';
 import redisClient from '../utils/redis';
@@ -48,7 +47,7 @@ class UsersController {
     }
 
     const usersCollection = dbClient.db.collection('users');
-    const user = await usersCollection.findOne({ _id: ObjectId(userId) });
+    const user = await usersCollection.findOne({ _id: userId });
     if (!user) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
