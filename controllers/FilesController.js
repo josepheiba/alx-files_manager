@@ -8,6 +8,11 @@ import dbClient from '../utils/db';
 import redisClient from '../utils/redis';
 
 class FilesController {
+  /**
+   * Handles file upload.
+   * @param {import('express').Request} req - The Express request object.
+   * @param {import('express').Response} res - The Express response object.
+   */
   static async postUpload(req, res) {
     const token = req.headers['x-token'];
     const userId = await redisClient.get(`auth_${token}`);
@@ -208,3 +213,4 @@ class FilesController {
 }
 
 export default FilesController;
+
