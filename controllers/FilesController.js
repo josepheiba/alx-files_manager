@@ -1,23 +1,21 @@
-import { v4 as uuidv4 } from "uuid";
+import { ObjectId } from "mongodb";
 import fs from "fs";
 import path from "path";
 import dbClient from "../utils/db";
 import redisClient from "../utils/redis";
 
-// Retrieve folder path from environment variable or use default
-const FOLDER_PATH = process.env.FOLDER_PATH || "/tmp/files_manager";
-
 class FilesController {
   static async postUpload(req, res) {
     const token = req.headers["x-token"];
-    const userId = await redisClient.get(`auth_${token}`);
+    const { name, type, parentId = 0, isPublic = false, data } = req.body;
 
+    // Check user authentication
+    const userId = await redisClient.get(`auth_${token}`);
     if (!userId) {
       return res.status(401).json({ error: "Unauthorized" });
     }
 
-    const { name, type, parentId = "0", isPublic = false, data } = req.body;
-
+    // Validate input
     if (!name) {
       return res.status(400).json({ error: "Missing name" });
     }
@@ -31,10 +29,11 @@ class FilesController {
       return res.status(400).json({ error: "Missing data" });
     }
 
-    let parentFile = null;
-    if (parentId !== "0") {
-      parentFile = await dbClient.filesCollection.findOne({ _id: parentId });
-
+    // Validate parentId if set
+    if (parentId !== 0) {
+      const parentFile = await dbClient.db
+        .collection("files")
+        .findOne({ _id: ObjectId(parentId) });
       if (!parentFile) {
         return res.status(400).json({ error: "Parent not found" });
       }
@@ -43,38 +42,42 @@ class FilesController {
       }
     }
 
-    const user = await dbClient.usersCollection.findOne({ _id: userId });
-    if (!user) {
-      return res.status(401).json({ error: "Unauthorized" });
-    }
-
-    const fileData = {
-      userId: user._id,
+    // Create a new file in the database
+    const newFile = {
+      userId: ObjectId(userId),
       name,
       type,
       isPublic,
       parentId,
     };
 
+    // Handle folder creation
     if (type === "folder") {
-      const result = await dbClient.filesCollection.insertOne(fileData);
-      return res.status(201).json({ ...fileData, id: result.insertedId });
+      const result = await dbClient.db.collection("files").insertOne(newFile);
+      return res
+        .status(201)
+        .json({ id: result.insertedId.toString(), ...newFile });
     }
 
-    // Create the storage folder if it doesn't exist
-    if (!fs.existsSync(FOLDER_PATH)) {
-      fs.mkdirSync(FOLDER_PATH, { recursive: true });
-    }
+    // Handle file or image creation
+    const folderPath = process.env.FOLDER_PATH || "/tmp/files_manager";
+    const fileName = `${Date.now()}-${name}`;
+    const filePath = path.join(folderPath, fileName);
 
-    const localPath = path.join(FOLDER_PATH, uuidv4());
-    fileData.localPath = localPath;
+    // Ensure the folder exists
+    fs.mkdirSync(folderPath, { recursive: true });
 
-    // Decode the base64 data and write it to disk
-    const fileContent = Buffer.from(data, "base64");
-    fs.writeFileSync(localPath, fileContent);
+    // Store the file locally
+    fs.writeFileSync(filePath, Buffer.from(data, "base64"));
 
-    const result = await dbClient.filesCollection.insertOne(fileData);
-    return res.status(201).json({ ...fileData, id: result.insertedId });
+    // Add local path to new file document
+    newFile.localPath = filePath;
+
+    // Insert file document in the database
+    const result = await dbClient.db.collection("files").insertOne(newFile);
+    return res
+      .status(201)
+      .json({ id: result.insertedId.toString(), ...newFile });
   }
 }
 
