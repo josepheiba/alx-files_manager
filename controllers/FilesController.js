@@ -1,3 +1,4 @@
+/* global process Buffer */
 import { v4 as uuidv4 } from 'uuid';
 import { ObjectId } from 'mongodb';
 import fs from 'fs';
